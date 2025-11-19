@@ -16,9 +16,10 @@ const custom404Page = custom404Template.replace(/{{CLIENT_URL}}/g, CLIENT_URL)
 
 app.use((req, res) => {
     const hostname = req.hostname;
-    const subdomain = hostname.split('.')[0];
+    const hostParts = hostname.split('.');
+    const subdomain = hostParts.length > 2 ? hostParts[0] : null;
 
-    if (subdomain === 'www' || subdomain === hostname) {
+    if (subdomain === 'www' || !subdomain) {
         console.log('Redirecting to main website from:', hostname);
         return res.redirect(301, CLIENT_URL);
     }
@@ -34,14 +35,14 @@ app.use((req, res) => {
 
 proxy.on('proxyRes', (proxyRes, req, res) => {
     let body = [];
-    
-    proxyRes.on('data', function(chunk) {
+
+    proxyRes.on('data', function (chunk) {
         body.push(chunk);
     });
-    
-    proxyRes.on('end', function() {
+
+    proxyRes.on('end', function () {
         body = Buffer.concat(body).toString();
-        
+
         if (body.includes('<Code>AccessDenied</Code>') || body.includes('<Code>NoSuchKey</Code>')) {
             res.writeHead(404, { 'Content-Type': 'text/html' });
             res.end(custom404Page);
